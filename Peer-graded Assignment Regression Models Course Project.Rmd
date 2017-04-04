@@ -1,0 +1,81 @@
+---
+title: 'Peer-graded Assignment: Regression Models Project'
+author: "Guang Yang"
+date: "March 5, 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Executive Summary
+Motor Trend is a magazine about the automobile industry. Looking at a data set of a collection of cars, they are interested in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome). They are particularly interested in the following two questions:
+
+1. "Is an automatic or manual transmission better for MPG":
+
+* Using a data set from Motor Trend Magazine along with linear regression, it can be concluded that there is a significant difference between the MPG of automatic and manual transmission cars.
+
+2. "Quantify the MPG difference between automatic and manual transmissions":
+
+* Controlling for other factors in a stepwise linear regression model, manual transmission cars have a better fuel efficiency of 2.94 MPG more than automatic transmission cars.
+
+### Preparation
+```{r library and data}
+library(ggplot2)
+library(gridExtra)
+data("mtcars")
+#Convert "am" and "vs" from numeric variable to factor variable:
+mtcars$vs   <- factor(mtcars$vs); levels(mtcars$vs) <- c('V-engine', 'Straight')
+mtcars$am   <- factor(mtcars$am); levels(mtcars$am) <- c('Auto', 'Manual')
+```
+### Exploratory Data Analysis
+In appendix, fig 1 compares the distribution of MPG of automatic transmission cars and that of manual transmission cars, which shows manual transmission is better for MPG; fig 2 plots MPG against each available variable, which shows multiple variables have strong correlation with MPG. 
+
+### Build 2 linear regression models to answer question 1 and question 2
+#### Regressing MPG against AM only
+```{r regression1,echo = FALSE}
+fit1<-lm(mpg~am, data=mtcars)
+summary(fit1)
+```
+The coefficient of amManual of 7.245 means the expected MPG for manual transmission cars would be 7.245 higher than that of automatic transmission cars. The P-value of coefficient of amManual is 0.000285<0.05, thus the difference of MPG between manual transmission cars and automatic transmission cars is significant at significance level of 0.05. However, significant pattern in residual pot in fig 3 and R-squred of 35.98% indicates that the single regression model is not very well fitted thus the coefficient of amManual may be biased, a multiple regression model should be fitted to better quantify the MPG difference between automatic and manual transmissions.
+
+#### Multiple regression model with stepwise model selection
+```{r step, echo=FALSE}
+fit2 = step(fit1, direction = 'both', scope=formula(lm(data = mtcars, mpg ~ .)),trace=0)
+summary(fit2)
+```
+Starting from simple regression model fit1, through both direction stepwise model selection, the model which regresses mpg against am, wt and qsec is fitted. Based on the model output, a manual transmission car has a greater MPG by 2.94 than automatic transmission cars, controlling for other factors. The P-value of coefficient of amManual is 0.046716 <0.05, thus the difference of MPG between manual transmission cars and automatic transmission cars is significant at significance level of 0.05. Based on the residual plot in fig 4, while there are a few outliers, there is nothing significant that skews the data.
+
+### Conclusion
+1. There is a significant difference between the MPG of automatic and manual transmission cars. Manual transsion is significant better for MPG.
+
+2. Based on a stepwise linear regression model that took into account the weight, the type of transmission and the acceleration (qsec), manual transmission cars have a better fuel efficiency of 2.94 MPG more than automatic transmission cars, controlling for other factors.
+
+### Appendix
+```{r boxplot, echo=FALSE , fig.height=4}
+boxplot(mtcars$mpg~mtcars$am, main="Fig 1. MPG Distribution Comparison: Auto vs Manual")
+gfpoint <- geom_point(colour = "black", alpha = 0.2, size = 3)
+gfpbox <- geom_boxplot()
+gnline <- geom_line(colour = "black")
+grid.arrange(ggplot(mtcars, aes(cyl, mpg)) + gfpoint + geom_smooth(method = 'lm'), 
+             ggplot(mtcars, aes(disp, mpg)) + gfpoint + geom_smooth(method = 'lm'), 
+             ggplot(mtcars, aes(hp, mpg)) + gfpoint + geom_smooth(method = 'lm'), 
+             ggplot(mtcars, aes(drat, mpg)) + gfpoint + geom_smooth(method = 'lm'), 
+             ggplot(mtcars, aes(wt, mpg)) + gfpoint + geom_smooth(method = 'lm'), 
+             ggplot(mtcars, aes(qsec, mpg)) + gfpoint + geom_smooth(method = 'lm'), 
+             ggplot(mtcars, aes(vs, mpg)) + gfpoint + geom_smooth(method = 'lm'), 
+             ggplot(mtcars, aes(am, mpg)) + gfpoint + geom_smooth(method = 'lm'), 
+             ggplot(mtcars, aes(gear, mpg)) + gfpoint + geom_smooth(method = 'lm'), 
+             ggplot(mtcars, aes(carb, mpg)) + gfpoint + geom_smooth(method = 'lm'), 
+              top = "Fig 2.MPG againsts Each Variable",ncol=5)
+```
+```{r plot2, echo=FALSE}
+par(mfrow = c(2,2),oma=c(0,0,4,0))
+plot(fit1,sub.caption = "Fig 3.Simple Regression Residuals and Diagnostics")
+par(mfrow = c(2,2),oma=c(0,0,4,0))
+plot(fit2,sub.caption = "Fig 4.Multiple Regression Residuals and Diagnostics")
+
+```
